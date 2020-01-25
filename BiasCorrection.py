@@ -6,6 +6,8 @@ from .Error import mae, mse, rmse
 class BiasCorrection:
 
     def score(self, obsrv, model, method="mae"):
+        obsrv = np.array(obsrv, dtype=np.float)
+        model = np.array(model, dtype=np.float)
         methods = {"mae": mae, "mse": mse, "rmse": rmse}
         error_cal = methods[method]
         corrected = self.bias_correction(model)
@@ -27,11 +29,19 @@ class Shift(BiasCorrection):
         """
             calculate c
         """
-        self.model = model
-        self.obsrv = obsrv
-        self.c = np.nanmean(self.model) - np.nanmean(self.obsrv)
+        self.model = np.array(model, dtype=np.float)
+        self.obsrv = np.array(obsrv, dtype=np.float)
+
+        
+        if len(self.obsrv[~np.isnan(self.obsrv)]) > 0:
+            self.c = np.nanmean(self.model) - np.nanmean(self.obsrv)
+        else:
+            # no not-nan value available in observed data
+            print("Not enough observed data")
+            self.c = 0
 
     def bias_correction(self, model):
+        model = np.array(model, dtype=np.float) 
         corrected = model - self.c
         return corrected
 
@@ -48,11 +58,18 @@ class Scale(BiasCorrection):
         """
             calculate k
         """
-        self.model = model
-        self.obsrv = obsrv
-        self.k = 1 / (np.nanmean(self.model) / np.nanmean(self.obsrv))
+        self.model = np.array(model, dtype=np.float)
+        self.obsrv = np.array(obsrv, dtype=np.float)
+        if len(self.obsrv[~np.isnan(self.obsrv)]) > 0:
+            self.k = 1 / (np.nanmean(self.model) / np.nanmean(self.obsrv))
+        else:
+            # no not-nan value available in observed data
+            print("Not enough observed data")
+            self.k = 1
+
 
     def bias_correction(self, model):
+        model = np.array(model, dtype=np.float) 
         corrected = model * self.k
         return corrected
 
@@ -68,12 +85,18 @@ class LinearReg(BiasCorrection):
         """
             calculate slope and intercept
         """
-        self.model = model
-        self.obsrv = obsrv
-        lr = LinearRegression()
-        lr.fit(self.model.reshape(-1, 1), self.obsrv)
-        self.slope, self.intercept = np.round(lr.coef_[0], 6), np.round(lr.intercept_, 6)
+        self.model = np.array(model, dtype=np.float)
+        self.obsrv = np.array(obsrv, dtype=np.float)
+        if len(self.obsrv[~np.isnan(self.obsrv)]) > 0:
+            lr = LinearRegression()
+            lr.fit(self.model.reshape(-1, 1), self.obsrv)
+            self.slope, self.intercept = np.round(lr.coef_[0], 6), np.round(lr.intercept_, 6)
+        else:
+            # no not-nan value available in observed data
+            print("Not enough observed data")
+            self.slope, self.intercept = 1, 0
 
     def bias_correction(self, model):
+        model = np.array(model, dtype=np.float)
         corrected = model * self.slope + self.intercept
         return corrected

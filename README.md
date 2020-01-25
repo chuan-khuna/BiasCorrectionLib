@@ -6,7 +6,7 @@
 
 ```
 /BiascorrectionLib
-    |- Biascorrection.py
+    |- BiasCorrection.py
     |- Error.py
 example.py
 ```
